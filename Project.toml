@@ -1,6 +1,15 @@
 name = "LowRankVlasov1D1V"
-[compat]
-julia = "1.7.2"
-DrWatson = "2.9.1"
+uuid = "a019a79c-4ebf-43b5-8935-89dea3e70e6f"
+
 [deps]
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
+KronOperators = "06fee0cc-f4c4-11ec-12e9-8dfbca5208db"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+LinearMaps = "7a12625a-238d-50fd-b39a-03d52299707e"
+Parameters = "d96e819e-fc66-5662-9728-84c9c7592b0a"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[compat]
+DrWatson = "2.9.1"
+julia = "1.7.2"

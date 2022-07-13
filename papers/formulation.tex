@@ -1,0 +1,84 @@
+\documentclass{article}
+\title{Summary of Dynamical Low-Rank Approximation for Kinetics}
+
+\input{~/dotfiles/latex/notes_header.tex}
+
+\begin{document}
+\maketitle
+
+\section*{Basic example of the Dynamical Low-Rank Method}
+
+Dynamical low-rank approximation method is a method that can greatly reduce the number of degrees of freedom required to represent a solution to a kinetic equation.
+It tackles the curse of dimensionality by projecting a scalar problem posed on \(2d\) dimensions into a pair of \(r\)-component problems posed on \(d\) dimensions, each.
+
+We'll demonstrate using the collisionless Vlasov equation:
+\begin{align}
+    \label{eqn:vlasov}
+    \partial_t f + v \cdot \nabla_x f + E \cdot \nabla_v f = 0
+\end{align}
+Suppose the solution is of the form
+\begin{align}
+    f(\bm{x}, \bm{v}, t) = \sum_{ij}^{r} X_i(\bm{x}, t) S_{ij}(t) V_j(\bm{v}, t).
+\end{align}
+The integer \(r\) is the rank of the solution. Sums over \(i\) and \(j\) always run from 1 to \(r\).
+Our solver will keep track of the basis functions \(X_i, V_j\) and the matrix which combines them, \(S_{ij}\).
+The angle bracket notations used below are defined thus:
+\begin{align}
+\left\langle \cdot \right\rangle_x = \int_{\Omega_x}^{} \cdot \,\mathrm{d}\bm{x}, \qquad \left\langle \cdot \right\rangle_v = \int_{\Omega_v}^{} \cdot \,\mathrm{d}\bm{v}, \qquad \left\langle \cdot \right\rangle_{xv} = \int_{\Omega_x}^{} \int_{\Omega_v}^{} \cdot \,\mathrm{d}\bm{v} \,\mathrm{d}\bm{x}
+\end{align}
+
+Given: low rank factors \(X_i^n, V_j^n, S_{ij}^n,\) and the electric field \(E^n\) at time \(n\).
+
+We compute the new unknowns \(X_i^{n+1}, V_j^{n+1}, S_{ij}^{n+1}\), and \(E^{n+1}\) at time \(t^{n+1}\) as follows.
+\begin{itemize}
+    \item \textbf{E step}:
+    \begin{itemize}
+        \item Compute the charge density as follows:
+        \begin{align}
+            \rho(\bm{x}) = \int_{\Omega_v}^{} f \,\mathrm{d}\bm{v} = \sum_{ij}^{} X_i^n(\bm{x}) S_{ij}^n \int_{\Omega_v}^{} V_j^n(\bm{v}) \,\mathrm{d}\bm{v}
+        \end{align}
+    \item Solve Poisson's equation for \(E\)
+    \end{itemize}
+    
+    \item \textbf{K step}:
+    \begin{itemize}
+    \item Define \(K_j^n = \sum_{i}^{} X_i^n S_{ij}^n\)
+    \item Solve for \(K^{n+1}\) using a Forward Euler step:
+        \begin{align}
+            \label{eqn:K_step}
+            K_j^{n+1} = K_j^n - \Delta t \sum_{l}^{} (\nabla_x K_l^n) \cdot \left\langle \bm{v} V^n_j V^n_l \right\rangle_v - \Delta t \sum_{l}^{} K_l^n E \cdot \left\langle V^n_j \nabla_v V^n_l \right\rangle_v
+        \end{align}
+        Cost: \(\mathcal{O}(r^2N_v + r^2 N_x)\).
+    \item Extract a new basis \(X^{n+1}\) and intermediate matrix \(S'\) using a QR decomposition: 
+        \begin{align}
+            \sum_{i}^{}X_i^{n+1}(\bm{x}) S_{ij}' = K_j^{n+1}(\bm{x}).
+        \end{align}
+        Cost: \(\mathcal{O}(rN_x)\).
+    \end{itemize}
+\item \textbf{S step}:
+    \begin{itemize}
+        \item Solve for the next intermediate state \(S''\) using a Forward Euler step:
+            \begin{align}
+                S_{ij}'' = S_{ij}' + \Delta t \sum_{kl}^{} S_{kl}' \left\langle X_i^{n+1} \nabla_x X^{n+1}_k \right\rangle_x \cdot \left\langle \bm{v} V_j^n V^n_l \right\rangle_v + \Delta t \sum_{kl}^{} S_{kl}' \left\langle X_i^{n+1} E X_k^{n+1} \right\rangle_x \cdot \left\langle V^n_j \nabla_v V^n_l \right\rangle_v
+            \end{align}
+        This is a system of \(r^2\) ODEs.
+        Note that this step runs ``backwards'', which can be a problem for diffusive operators.
+        
+            Cost: \(\mathcal{O}(r^2 N_x + r^2 N_v)\) to compute the matrices and \(\mathcal{O}(r^4)\) to advance the ODE.
+    \end{itemize}
+\item \textbf{L step}:
+    \begin{itemize}
+        \item Define \(L^n_i = \sum_{j}^{} S_{ij}'' V_j^n\).
+        \item Solve for \(L_i^{n+1}\) with a Forward Euler step:
+            \begin{align}
+                L_i^{n+1} = L_i^n - \Delta t \sum_{k}^{} L_k^n \left\langle X_i \nabla_x X_k \right\rangle_x - \Delta t \sum_{k}^{} (\nabla_v L_k^n) \left\langle X_i^{n+1} E X_k^{n+1} \right\rangle_x
+            \end{align}
+        Cost: \(\mathcal{O}(r^2 N_x)\) to compute the matrices and \(\mathcal{O}(r^2 N_v)\) to advance the PDE.
+    \item Extract a new basis \(V_j^{n+1}\) and the new matrix \(S_{ij}^{n+1}\) using a QR decomposition:
+        \begin{align}
+            \sum_{j}^{} S_{ij}^{n+1} V_j^{n+1}(\bm{v}) = L_i^{n+1}(\bm{v})
+        \end{align}
+    \end{itemize}
+\end{itemize}
+
+\end{document}
