@@ -1,20 +1,9 @@
 # LowRankVlasov1D1V
 
-This code base is using the Julia Language and [DrWatson](https://juliadynamics.github.io/DrWatson.jl/stable/)
-to make a reproducible scientific project named
-> LowRankVlasov1D1V
+This is an implementation of the algorithm described in "A Low-Rank Projector-Splitting Integrator for the Vlasov--Poisson Equation"[^1]
+Note that instead of the Fourier or Semi-Lagrangian discretizations suggested therein, we use a finite volume scheme with a Van Leer flux.
 
-To (locally) reproduce this project, do the following:
+See the notebooks folder for several Jupyter notebooks which contain test cases.
 
-0. Download this code base. Notice that raw data are typically not included in the
-   git-history and may need to be downloaded independently.
-1. Open a Julia console and do:
-   ```
-   julia> using Pkg
-   julia> Pkg.add("DrWatson") # install globally, for using `quickactivate`
-   julia> Pkg.activate("path/to/this/project")
-   julia> Pkg.instantiate()
-   ```
+[^1]: Einkemmer, Lukas, and Christian Lubich. “A Low-Rank Projector-Splitting Integrator for the Vlasov--Poisson Equation.” SIAM Journal on Scientific Computing 40, no. 5 (January 2018): B1330–60. https://doi.org/10.1137/18M116383X.
 
-This will install all necessary packages for you to be able to run the scripts and
-everything should work out of the box, including correctly finding local paths.
